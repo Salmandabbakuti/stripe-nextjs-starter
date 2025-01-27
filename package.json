@@ -1,5 +1,5 @@
 {
-  "name": "razorpay-next-poc",
+  "name": "stripe-next-poc",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "next": "15.1.6",
-    "razorpay": "^2.9.5",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "stripe": "^17.5.0"
   }
 }

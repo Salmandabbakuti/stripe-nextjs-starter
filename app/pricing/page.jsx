@@ -1,102 +1,34 @@
 "use client";
-import { useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { createOrder, verifyPayment } from "@/app/actions";
+import { createCheckout } from "@/app/actions";
 
 export default function Pricing() {
-  const router = useRouter();
-
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
   const handlePurchase = async () => {
     try {
-      // const response = await fetch("/api/razorpay/create-order", {
+      const orderData = {
+        amount: 199,
+        currency: "usd"
+      };
+      // const response = await fetch("/api/stripe/create-checkout", {
       //   method: "POST",
       //   headers: {
       //     "Content-Type": "application/json"
       //   },
-      //   body: JSON.stringify({
-      //     amount: 5999,
-      //     currency: "INR"
-      //   })
+      //   body: JSON.stringify(orderData)
       // });
-      // // check if response is ok
-      // const order = await response.json();
       // if (!response.ok) {
-      //   console.error("Failed to create order:", response);
-      //   alert(`Failed to create order: ${order?.message}`);
-      //   return;
+      //   throw new Error("Failed to create payment session!");
       // }
-      const order = await createOrder({ amount: 5999, currency: "INR" }); // create order using action
-      console.log("order created:", order);
-      const options = {
-        key: "rzp_test_qQtJjEmANYGZzQ", // Replace with your Razorpay key_id
-        amount: order.amount,
-        currency: order.currency,
-        name: "Acme Corp",
-        description: "Pro Plan Subscription",
-        image: "https://picsum.photos/200",
-        order_id: order.id, // This is the order_id created in the backend
-        // callback_url: "http://localhost:3000/api/razorpay/verify-payment", // Your success URL, razorpay sends post request with (orderid, paymentid, signature) can be used to verify payment aswell
-        redirect: false, // This is important to prevent redirection to the success URL on failure
-        prefill: {
-          name: "John Doe",
-          email: "johndoe@acme.com",
-          contact: "9999999999"
-        },
-        theme: {
-          color: "#007bff"
-        },
-        handler: async function (response) {
-          // const verifyResponse = await fetch("/api/razorpay/verify-payment", {
-          //   method: "POST",
-          //   headers: {
-          //     "Content-Type": "application/json"
-          //   },
-          //   body: JSON.stringify({
-          //     razorpay_order_id: response.razorpay_order_id,
-          //     razorpay_payment_id: response.razorpay_payment_id,
-          //     razorpay_signature: response.razorpay_signature
-          //   })
-          // });
-          // const data = await verifyResponse.json();
-          // if (!verifyResponse.ok) {
-          //   console.error("Payment verification failed:", data);
-          //   router.push("/payment-cancel");
-          // } else {
-          //   console.log("Payment verified:", data);
-          //   router.push("/payment-success");
-          // }
-          // or verify payment using action
-          await verifyPayment({
-            razorpay_order_id: response.razorpay_order_id,
-            razorpay_payment_id: response.razorpay_payment_id,
-            razorpay_signature: response.razorpay_signature
-          })
-            .then((data) => {
-              console.log("Payment verified:", data);
-              router.push("/payment-success");
-            })
-            .catch((error) => {
-              console.error("Payment verification failed:", error);
-              router.push("/payment-cancel");
-            });
-        }
-      };
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      // const { id, url } = await response.json();
+      // or use action to create checkout session
+      const { id, url } = await createCheckout(orderData);
+      console.log("checkout session created", id, url);
+      alert("Redirecting to the payment page");
+      // open checkout page in new tab
+      window.open(url, "_blank");
     } catch (error) {
-      console.error("Purchase failed:", error);
-      alert("An error occurred. Please try again later.");
+      console.error("Error creating checkout session:", error);
+      alert("Failed to create checkout session!");
     }
   };
 
@@ -117,7 +49,7 @@ export default function Pricing() {
             - Priority support
             <br />- 1 Year License
           </p>
-          <p style={styles.planPrice}>₹5999 INR</p>
+          <p style={styles.planPrice}>$199 USD</p>
           <button style={styles.button} onClick={handlePurchase}>
             Purchase
           </button>

@@ -1,42 +1,41 @@
 "use server";
-import { razorpay } from "@/lib/razorpay";
-import { validateWebhookSignature } from "razorpay/dist/utils/razorpay-utils";
+import { stripe } from "@/lib/stripe";
 
-export const createOrder = async (orderData) => {
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+export const createCheckout = async (orderData) => {
   console.log("creating order in action");
   const { amount, currency } = orderData;
   if (!amount || !currency) {
-    throw new Error("amount and currency are required to create order!");
+    throw new Error("amount and currency are required to create checkout!");
   }
-  const options = {
-    amount: amount * 100,
-    currency,
-    receipt: "order_rcptid_11",
-    notes: {
-      userId: "123",
-      plan: "basic",
-      email: "johndoe@gmail.com"
-    }
-  };
-  const response = await razorpay.orders.create(options);
-  return response;
-};
-
-export const verifyPayment = async (paymentData) => {
-  console.log("verifying payment in action");
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-    paymentData;
-  const body = razorpay_order_id + "|" + razorpay_payment_id;
-  const isValid = validateWebhookSignature(
-    body,
-    razorpay_signature,
-    process.env.RAZORPAY_KEY_SECRET
-  );
-  if (!isValid) {
-    console.error("Payment verification failed. Invalid signature");
-    throw new Error("Payment verification failed. Invalid signature");
-  }
-  // process the payment
-  // e.g. save the payment details in your database
-  return { ok: true };
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    line_items: [
+      {
+        price_data: {
+          currency,
+          product_data: {
+            name: "Technow Pro Subscription",
+            description: "Monthly subscription to Technow Pro",
+            images: ["https://picsum.photos/200/300"]
+          },
+          unit_amount: amount * 100 // accepts amount in cents
+        },
+        quantity: 1
+      }
+    ],
+    payment_intent_data: {
+      // metadata to store custom data and map in webhook
+      // can only store string values, so stringify if needed
+      metadata: {
+        order_id: "12345",
+        user_id: "67890"
+      }
+    },
+    mode: "payment",
+    success_url: `${APP_URL}/payment-success`,
+    cancel_url: `${APP_URL}/payment-cancel`
+  });
+  return { id: session.id, url: session.url };
 };
